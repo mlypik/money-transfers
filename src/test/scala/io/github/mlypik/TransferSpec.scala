@@ -1,6 +1,5 @@
 package io.github.mlypik
 
-import akka.actor.ActorRef
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.effect.IO
@@ -17,8 +16,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
   )
 
-  override val persistenceActor: ActorRef =
-    system.actorOf(PersistenceActor.props(xa), "persistence")
+  override val persistenceHandler: PersistenceHandler = new PersistenceHandler(xa)
 
   lazy val routes = transferRoutes
 

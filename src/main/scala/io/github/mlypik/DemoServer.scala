@@ -3,7 +3,7 @@ package io.github.mlypik
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
@@ -20,12 +20,10 @@ object DemoServer extends App with TransferRoutes {
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
   )
 
-  override val persistenceActor: ActorRef =
-    system.actorOf(PersistenceActor.props(xa), "persistence")
+  override val persistenceHandler: PersistenceHandler = new PersistenceHandler(xa)
 
   lazy val routes: Route = transferRoutes
 
-  //#http-server
   val serverBinding: Future[Http.ServerBinding] = Http().bindAndHandle(routes, "localhost", 8080)
 
   serverBinding.onComplete {
