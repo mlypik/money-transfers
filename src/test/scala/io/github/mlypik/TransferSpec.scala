@@ -43,7 +43,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
         contentType should ===(ContentTypes.`application/json`)
 
-        entityAs[AccountBalance] should ===(AccountBalance(1234, 0))
+        entityAs[AccountBalance] should ===(AccountBalance(1234, 100))
       }
     }
 
