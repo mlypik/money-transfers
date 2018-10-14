@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.get
 import akka.http.scaladsl.server.directives.PathDirectives.path
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
+import doobie.util.invariant.UnexpectedEnd
 
 trait TransferRoutes extends JsonSupport {
 
@@ -20,10 +21,10 @@ trait TransferRoutes extends JsonSupport {
   lazy val transferRoutes: Route = {
     path("balance" / LongNumber) { accountId =>
       get {
-        val maybeBalance = persistenceHandler.getBalance(accountId)
-        onSuccess(maybeBalance) {
-          case Some(balance) => complete(balance)
-          case None => complete(StatusCodes.NotFound)
+        onSuccess(persistenceHandler.getBalance(accountId)) {
+          case Right(balance) => complete(balance)
+          case Left(UnexpectedEnd) => complete(StatusCodes.NotFound)
+          case _ => complete(StatusCodes.InternalServerError)
         }
       }
     }

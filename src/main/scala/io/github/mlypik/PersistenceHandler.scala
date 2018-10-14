@@ -11,13 +11,13 @@ final case class AccountBalance(accountId: Long, balance: Long)
 
 class PersistenceHandler(transactor: Aux[IO, Unit]) {
 
-  def getBalance(accountId: Long): Future[Option[AccountBalance]] = {
+  def getBalance(accountId: Long): Future[Either[Throwable, AccountBalance]] = {
     sql"""SELECT balance FROM account WHERE accountId = $accountId"""
       .query[Long]
-      .option
+      .unique
       .transact(transactor)
-      .map(
-        _.map(balance => AccountBalance(accountId, balance)))
+      .map(balance => AccountBalance(accountId, balance))
+      .attempt
       .unsafeToFuture()
   }
 }
