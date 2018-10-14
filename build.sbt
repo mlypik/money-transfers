@@ -18,7 +18,7 @@ lazy val root = (project in file(".")).
       "org.tpolecat"      %% "doobie-h2"            % doobieVersion,
       "org.tpolecat"      %% "doobie-specs2"        % doobieVersion,
 
-      "com.h2database"    %% "h2"                   % "1.4.197",
+      "com.h2database"    %  "h2"                   % "1.4.197",
 
       "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,

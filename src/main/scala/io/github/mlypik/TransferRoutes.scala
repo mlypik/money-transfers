@@ -2,6 +2,7 @@ package io.github.mlypik
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.get
@@ -19,9 +20,13 @@ trait TransferRoutes extends JsonSupport {
   lazy val transferRoutes: Route = {
     path("balance" / LongNumber) { accountId =>
       get {
-        complete(persistenceHandler.getBalance(accountId))
+        val maybeBalance = persistenceHandler.getBalance(accountId)
+        onSuccess(maybeBalance) {
+          case Some(balance) => complete(balance)
+          case None => complete(StatusCodes.NotFound)
         }
       }
     }
+  }
 
 }

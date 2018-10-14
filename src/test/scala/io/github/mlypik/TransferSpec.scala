@@ -21,8 +21,15 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
     TestDataProvider.populateDatabase(xa)
   }
 
-
   "TransferRoutes" should {
+    "return return not found if no account present (GET /balance/accountId)" in {
+      val request = Get(uri = "/balance/9999")
+
+      request ~> transferRoutes ~> check {
+        status shouldBe StatusCodes.NotFound
+
+      }
+    }
     "return account balance if account present (GET /balance/accountId)" in {
       val request = Get(uri = "/balance/1234")
 
@@ -34,6 +41,6 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
         entityAs[AccountBalance] should ===(AccountBalance(1234, 100))
       }
     }
-
   }
+
 }
