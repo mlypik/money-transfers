@@ -7,9 +7,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.get
 import akka.http.scaladsl.server.directives.PathDirectives.path
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
-import akka.util.Timeout
-
-import scala.concurrent.duration._
 
 trait TransferRoutes extends JsonSupport {
 
@@ -18,8 +15,6 @@ trait TransferRoutes extends JsonSupport {
   lazy val log = Logging(system, classOf[TransferRoutes])
 
   def persistenceHandler: PersistenceHandler
-
-  implicit lazy val timeout = Timeout(5.seconds)
 
   lazy val transferRoutes: Route = {
     path("balance" / LongNumber) { accountId =>

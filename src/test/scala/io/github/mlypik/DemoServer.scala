@@ -1,14 +1,15 @@
 package io.github.mlypik
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import cats.effect.IO
 import doobie.util.transactor.Transactor
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 object DemoServer extends App with TransferRoutes {
 
@@ -19,6 +20,8 @@ object DemoServer extends App with TransferRoutes {
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
   )
+
+  TestDataProvider.populateDatabase(xa)
 
   override val persistenceHandler: PersistenceHandler = new PersistenceHandler(xa)
 
