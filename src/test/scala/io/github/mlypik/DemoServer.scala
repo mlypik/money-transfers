@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import cats.effect.IO
 import doobie.util.transactor.Transactor
+import monix.eval.Task
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -17,7 +17,7 @@ object DemoServer extends App with TransferRoutes {
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContext = system.dispatcher
 
-  val xa = Transactor.fromDriverManager[IO](
+  val xa = Transactor.fromDriverManager[Task](
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
   )
 

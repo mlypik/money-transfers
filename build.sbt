@@ -1,6 +1,8 @@
 lazy val akkaHttpVersion = "10.1.5"
 lazy val akkaVersion    = "2.5.17"
 lazy val doobieVersion    = "0.5.3"
+lazy val monixVersion    = "3.0.0-RC1"
+lazy val h2Version    = "1.4.197"
 
 lazy val root = (project in file(".")).
   settings(
@@ -18,7 +20,9 @@ lazy val root = (project in file(".")).
       "org.tpolecat"      %% "doobie-h2"            % doobieVersion,
       "org.tpolecat"      %% "doobie-specs2"        % doobieVersion,
 
-      "com.h2database"    %  "h2"                   % "1.4.197",
+      "io.monix"          %% "monix"                % monixVersion,
+
+      "com.h2database"    %  "h2"                   % h2Version,
 
       "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
       "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,

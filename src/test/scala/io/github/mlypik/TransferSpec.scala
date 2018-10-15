@@ -2,16 +2,16 @@ package io.github.mlypik
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import cats.effect.IO
 import doobie.util.transactor.Transactor
 import doobie.util.transactor.Transactor.Aux
+import monix.eval.Task
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 class TransferSpec extends WordSpec with Matchers with ScalaFutures with ScalatestRouteTest
   with TransferRoutes with BeforeAndAfterAll {
 
-  val xa: Aux[IO, Unit] = Transactor.fromDriverManager[IO](
+  val xa: Aux[Task, Unit] = Transactor.fromDriverManager[Task](
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
   )
 
