@@ -7,10 +7,12 @@ import doobie.util.transactor.Transactor
 import doobie.util.transactor.Transactor.Aux
 import monix.eval.Task
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
 
 class TransferSpec extends WordSpec with Matchers with ScalaFutures with ScalatestRouteTest
-  with TransferRoutes with BeforeAndAfterAll {
+  with TransferRoutes with BeforeAndAfter {
+
+  import spray.json.DefaultJsonProtocol._
 
   val xa: Aux[Task, Unit] = Transactor.fromDriverManager[Task](
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
@@ -18,7 +20,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
   override val persistenceHandler: PersistenceHandler = new PersistenceHandler(xa)
 
-  override def beforeAll() = {
+  before {
     TestDataProvider.populateDatabase(xa)
   }
 
@@ -28,7 +30,6 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
       request ~> transferRoutes ~> check {
         status shouldBe NotFound
-
       }
     }
     "return account balance if account present (GET /balance/accountId)" in {
@@ -78,6 +79,69 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
         }
       }
     }
-  }
 
+    "History" should {
+      "show empty transaction history for account with no history (GET /history/accountId)" in {
+        val historyRequest = Get(uri = "/history/1234")
+
+        historyRequest ~> transferRoutes ~> check {
+          status shouldBe OK
+          entityAs[List[TransferRecord]] shouldBe empty
+        }
+      }
+    }
+
+    "History" should {
+      "show transaction history for account with history (GET /history/accountId)" in {
+        val transferSpec = MoneyTransfer(1234, 4321, 10)
+        val transferRequest = Post(uri = "/transfer", content = transferSpec)
+
+        transferRequest ~> transferRoutes ~> check {
+          status shouldBe OK
+        }
+
+        val historyRequest = Get(uri = "/history/1234")
+
+        historyRequest ~> transferRoutes ~> check {
+          status shouldBe OK
+          entityAs[List[TransferRecord]] should have length 1
+        }
+      }
+      "be available for both accounts involved in transfer (GET /history/accountId)" in {
+        val transferSpec = MoneyTransfer(1234, 4321, 10)
+        val transferRequest = Post(uri = "/transfer", content = transferSpec)
+
+        transferRequest ~> transferRoutes ~> check {
+          status shouldBe OK
+        }
+
+        val historyRequestFrom = Get(uri = "/history/1234")
+
+        historyRequestFrom ~> transferRoutes ~> check {
+          status shouldBe OK
+          val records = entityAs[List[TransferRecord]]
+          records should have length 1
+          val record = records.head
+
+          record.accountId shouldBe 1234
+          record.amount shouldBe -10
+          record.ref shouldBe 4321
+        }
+
+        val historyRequestTo = Get(uri = "/history/4321")
+
+        historyRequestTo ~> transferRoutes ~> check {
+          status shouldBe OK
+          val records = entityAs[List[TransferRecord]]
+          records should have length 1
+          val record = records.head
+
+          record.accountId shouldBe 4321
+          record.amount shouldBe 10
+          record.ref shouldBe 1234
+        }
+      }
+    }
+  }
 }
+

@@ -12,6 +12,7 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import doobie.util.invariant.UnexpectedEnd
 
 trait TransferRoutes extends JsonSupport {
+  import spray.json.DefaultJsonProtocol._
 
   implicit def system: ActorSystem
 
@@ -40,8 +41,18 @@ trait TransferRoutes extends JsonSupport {
             case Left(UnexpectedEnd) => complete(StatusCodes.BadRequest, "No account")
             case Left(exception) =>
               log.error(exception, "Unknown error")
-              complete(StatusCodes.InternalServerError, exception)
+              complete(StatusCodes.InternalServerError)
           }
+        }
+      }
+    } ~
+    path("history" / LongNumber) { accountId =>
+      get {
+        onSuccess(persistenceHandler.getHistory(accountId)) {
+          case Right(transfers) => complete(transfers)
+          case Left(exception) =>
+            log.error(exception, "Unknown error")
+            complete(StatusCodes.InternalServerError)
         }
       }
     }

@@ -1,5 +1,7 @@
 package io.github.mlypik
 
+import java.time.Instant
+
 import akka.Done
 import doobie.util.transactor.Transactor.Aux
 import monix.eval.Task
@@ -12,10 +14,12 @@ final case class MoneyTransfer(from: Long, to: Long, amount: BigDecimal)
 
 final case class AccountBalance(accountId: Long, balance: BigDecimal)
 
+final case class TransferRecord(accountId: Long, amount: BigDecimal, ref: Long, transactiondate: String)
+
 class PersistenceHandler(transactor: Aux[Task, Unit]) {
 
   def getBalance(accountId: Long): Future[Either[Throwable, AccountBalance]] = {
-    sql"""SELECT balance FROM account WHERE accountId = $accountId"""
+    sql"""SELECT balance FROM accounts WHERE accountId = $accountId"""
       .query[BigDecimal]
       .unique
       .transact(transactor)
@@ -25,6 +29,19 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
   }
 
   def preformTransfer(transferSpec: MoneyTransfer): Future[Either[Throwable, Done]] = {
+    def updateAccountOrFail(accountId: Long, expectedBalance: BigDecimal, targetBalance: BigDecimal) = {
+      sql"""UPDATE accounts SET balance = $targetBalance WHERE accountId = $accountId AND balance = $expectedBalance"""
+        .update.run.map {
+          case 1 => Done
+          case _ => throw new IllegalStateException("BalanceUpdateFailed")
+        }
+    }
+    def insertTransferDetails(record: TransferRecord) = {
+      sql"""INSERT INTO transfers (accountId, amount, ref, transactiondate)
+            VALUES (${record.accountId}, ${record.amount}, ${record.ref}, ${record.transactiondate})"""
+        .update.run
+    }
+
     val futureBalanceFrom = getBalance(transferSpec.from)
     val futureBalanceTo = getBalance(transferSpec.to)
 
@@ -36,28 +53,33 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
     currentBalances.flatMap {
       case (Left(exception), _) => Future.successful(Left(exception))
       case (_, Left(exception)) => Future.successful(Left(exception))
-      case (Right(balanceFrom), Right(balanceTo)) => {
+      case (Right(balanceFrom), Right(balanceTo)) =>
         val balanceFromAfterTransfer = balanceFrom.balance - transferSpec.amount
         val balanceToAfterTransfer = balanceTo.balance + transferSpec.amount
         val updateFromAccount = updateAccountOrFail(transferSpec.from, balanceFrom.balance, balanceFromAfterTransfer)
         val updateToAccount = updateAccountOrFail(transferSpec.to, balanceTo.balance, balanceToAfterTransfer)
+        val transactionDate = Instant.now().toString
+        val insertFrom = insertTransferDetails(TransferRecord(transferSpec.from, -transferSpec.amount, transferSpec.to, transactionDate))
+        val insertTo = insertTransferDetails(TransferRecord(transferSpec.to, transferSpec.amount, transferSpec.from, transactionDate))
 
         val program = for {
-          updatedFrom <- updateFromAccount
-          updatedTo <- updateToAccount
+          _ <- updateFromAccount
+          _ <- updateToAccount
+          _ <- insertFrom
+          _ <- insertTo
         } yield Done
 
         program.transact(transactor).attempt.runAsync
-      }
     }
   }
 
-  private def updateAccountOrFail(accountId: Long, expectedBalance: BigDecimal, targetBalance: BigDecimal) = {
-    sql"""UPDATE account SET balance = $targetBalance WHERE accountId = $accountId AND balance = $expectedBalance"""
-      .update.run.map {
-        case 1 => Done
-        case _ => throw new IllegalStateException("BalanceUpdateFailed")
-      }
+  def getHistory(accountId: Long): Future[Either[Throwable, List[TransferRecord]]] = {
+    sql"""SELECT accountid, amount, ref, transactiondate FROM transfers WHERE accountId = $accountId"""
+      .query[TransferRecord]
+      .to[List]
+      .transact(transactor)
+      .attempt
+      .runAsync
   }
 
 }
