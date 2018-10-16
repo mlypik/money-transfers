@@ -24,8 +24,10 @@ trait TransferRoutes extends JsonSupport {
       get {
         onSuccess(persistenceHandler.getBalance(accountId)) {
           case Right(balance) => complete(balance)
-          case Left(UnexpectedEnd) => complete(StatusCodes.NotFound)
-          case _ => complete(StatusCodes.InternalServerError)
+          case Left(UnexpectedEnd) => complete(StatusCodes.NotFound, "Account not found")
+          case Left(exception) =>
+            log.error(exception, "Unknown error")
+            complete(StatusCodes.InternalServerError)
         }
       }
     }
@@ -35,10 +37,12 @@ trait TransferRoutes extends JsonSupport {
         entity(as[MoneyTransfer]) { transferSpec =>
           onSuccess(persistenceHandler.preformTransfer(transferSpec)) {
             case Right(Done) => complete(StatusCodes.OK)
-            case _ => complete(StatusCodes.InternalServerError)
+            case Left(UnexpectedEnd) => complete(StatusCodes.BadRequest, "No account")
+            case Left(exception) =>
+              log.error(exception, "Unknown error")
+              complete(StatusCodes.InternalServerError, exception)
           }
         }
       }
     }
-
 }

@@ -39,21 +39,25 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
       case (Right(balanceFrom), Right(balanceTo)) => {
         val balanceFromAfterTransfer = balanceFrom.balance - transferSpec.amount
         val balanceToAfterTransfer = balanceTo.balance + transferSpec.amount
-        val updateFromAccount =
-          sql"""UPDATE account SET balance = ${balanceFromAfterTransfer} WHERE accountId = ${transferSpec.from} AND balance = ${balanceFrom.balance}"""
-            .update.run
-        val updateToAccount =
-          sql"""UPDATE account SET balance = ${balanceToAfterTransfer} WHERE accountId = ${transferSpec.to} AND balance = ${balanceTo.balance}"""
-            .update.run
+        val updateFromAccount = updateAccountOrFail(transferSpec.from, balanceFrom.balance, balanceFromAfterTransfer)
+        val updateToAccount = updateAccountOrFail(transferSpec.to, balanceTo.balance, balanceToAfterTransfer)
 
         val program = for {
-          _ <- updateFromAccount
-          _ <- updateToAccount
+          updatedFrom <- updateFromAccount
+          updatedTo <- updateToAccount
         } yield Done
 
         program.transact(transactor).attempt.runAsync
       }
     }
-
   }
+
+  private def updateAccountOrFail(accountId: Long, expectedBalance: BigDecimal, targetBalance: BigDecimal) = {
+    sql"""UPDATE account SET balance = $targetBalance WHERE accountId = $accountId AND balance = $expectedBalance"""
+      .update.run.map {
+        case 1 => Done
+        case _ => throw new IllegalStateException("BalanceUpdateFailed")
+      }
+  }
+
 }

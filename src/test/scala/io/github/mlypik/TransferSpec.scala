@@ -22,7 +22,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
     TestDataProvider.populateDatabase(xa)
   }
 
-  "TransferRoutes" should {
+  "Get Balance" should {
     "return return not found if no account present (GET /balance/accountId)" in {
       val request = Get(uri = "/balance/9999")
 
@@ -40,21 +40,42 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
         entityAs[AccountBalance] shouldBe AccountBalance(1234, 100)
       }
     }
-    "perform basic money transfer between accounts (POST /transfer)" in {
-      val transferSpec = MoneyTransfer(1234, 4321, 10)
-      val transferRequest = Post(uri = "/transfer", content = transferSpec)
 
-      transferRequest ~> transferRoutes ~> check {
-        status shouldBe OK
+    "Transfer" should {
+      "perform basic money transfer between accounts (POST /transfer)" in {
+        val transferSpec = MoneyTransfer(1234, 4321, 10)
+        val transferRequest = Post(uri = "/transfer", content = transferSpec)
+
+        transferRequest ~> transferRoutes ~> check {
+          status shouldBe OK
+        }
+
+        Get(uri = "/balance/1234") ~> transferRoutes ~> check {
+          status shouldBe OK
+          entityAs[AccountBalance] shouldBe AccountBalance(1234, 90)
+        }
+        Get(uri = "/balance/4321") ~> transferRoutes ~> check {
+          status shouldBe OK
+          entityAs[AccountBalance] shouldBe AccountBalance(4321, 20)
+        }
       }
 
-      Get(uri = "/balance/1234") ~> transferRoutes ~> check {
-        status shouldBe OK
-        entityAs[AccountBalance] shouldBe AccountBalance(1234, 90)
+      "fail if sender account does not exist(POST /transfer)" in {
+        val transferSpec = MoneyTransfer(9999, 4321, 10)
+        val transferRequest = Post(uri = "/transfer", content = transferSpec)
+
+        transferRequest ~> transferRoutes ~> check {
+          status shouldBe BadRequest
+        }
       }
-      Get(uri = "/balance/4321") ~> transferRoutes ~> check {
-        status shouldBe OK
-        entityAs[AccountBalance] shouldBe AccountBalance(4321, 20)
+
+      "fail if recipient account does not exist(POST /transfer)" in {
+        val transferSpec = MoneyTransfer(1234, 9999, 10)
+        val transferRequest = Post(uri = "/transfer", content = transferSpec)
+
+        transferRequest ~> transferRoutes ~> check {
+          status shouldBe BadRequest
+        }
       }
     }
   }
