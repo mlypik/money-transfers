@@ -1,5 +1,6 @@
 package io.github.mlypik
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model.StatusCodes
@@ -28,6 +29,16 @@ trait TransferRoutes extends JsonSupport {
         }
       }
     }
-  }
+  } ~
+    path("transfer") {
+      post {
+        entity(as[MoneyTransfer]) { transferSpec =>
+          onSuccess(persistenceHandler.preformTransfer(transferSpec)) {
+            case Right(Done) => complete(StatusCodes.OK)
+            case _ => complete(StatusCodes.InternalServerError)
+          }
+        }
+      }
+    }
 
 }

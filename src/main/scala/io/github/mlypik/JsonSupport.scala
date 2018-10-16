@@ -6,5 +6,6 @@ import spray.json.DefaultJsonProtocol
 trait JsonSupport extends SprayJsonSupport {
   import DefaultJsonProtocol._
 
+  implicit val moneyTransferJsonFormat = jsonFormat3(MoneyTransfer)
   implicit val accountBalanceJsonFormat = jsonFormat2(AccountBalance)
 }

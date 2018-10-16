@@ -1,6 +1,7 @@
 package io.github.mlypik
 
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import doobie.util.transactor.Transactor
 import doobie.util.transactor.Transactor.Aux
@@ -26,7 +27,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
       val request = Get(uri = "/balance/9999")
 
       request ~> transferRoutes ~> check {
-        status shouldBe StatusCodes.NotFound
+        status shouldBe NotFound
 
       }
     }
@@ -34,11 +35,26 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
       val request = Get(uri = "/balance/1234")
 
       request ~> transferRoutes ~> check {
-        status should ===(StatusCodes.OK)
+        status shouldBe OK
+        contentType shouldBe `application/json`
+        entityAs[AccountBalance] shouldBe AccountBalance(1234, 100)
+      }
+    }
+    "perform basic money transfer between accounts (POST /transfer)" in {
+      val transferSpec = MoneyTransfer(1234, 4321, 10)
+      val transferRequest = Post(uri = "/transfer", content = transferSpec)
 
-        contentType should ===(ContentTypes.`application/json`)
+      transferRequest ~> transferRoutes ~> check {
+        status shouldBe OK
+      }
 
-        entityAs[AccountBalance] should ===(AccountBalance(1234, 100))
+      Get(uri = "/balance/1234") ~> transferRoutes ~> check {
+        status shouldBe OK
+        entityAs[AccountBalance] shouldBe AccountBalance(1234, 90)
+      }
+      Get(uri = "/balance/4321") ~> transferRoutes ~> check {
+        status shouldBe OK
+        entityAs[AccountBalance] shouldBe AccountBalance(4321, 20)
       }
     }
   }

@@ -1,7 +1,6 @@
 package io.github.mlypik
 
 import doobie.util.transactor.Transactor.Aux
-import cats.implicits._
 import doobie.implicits._
 import monix.eval.Task
 import scala.concurrent.Await
@@ -15,12 +14,20 @@ object TestDataProvider {
     val drop = sql"""DROP TABLE IF EXISTS account""".update
     val create =
       sql"""CREATE TABLE account (
-      accountid   BIGINT,
-      balance BIGINT)""".update
-    val insert = sql"""INSERT INTO account (accountId, balance) VALUES (1234, 100)""".update
+      accountid   BIGINT UNIQUE ,
+      balance DECIMAL(20,4))""".update
+    val insertAcc1234 = sql"""INSERT INTO account (accountId, balance) VALUES (1234, 100)""".update
+    val insertAcc4321 = sql"""INSERT INTO account (accountId, balance) VALUES (4321, 10)""".update
 
-    val task = (drop.run *> create.run *> insert.run).transact(xa).runAsync
-    Await.result(task, 5.seconds)
+    val program = for {
+      _ <- drop.run
+      _ <- create.run
+      _ <- insertAcc1234.run
+      _ <- insertAcc4321.run
+    } yield ()
+
+    val future = program.transact(xa).runAsync
+    Await.result(future, 5.seconds)
   }
 
 }
