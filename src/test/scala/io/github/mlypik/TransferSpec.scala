@@ -7,7 +7,7 @@ import doobie.util.transactor.Transactor
 import doobie.util.transactor.Transactor.Aux
 import monix.eval.Task
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.scalatest.{ BeforeAndAfter, Matchers, WordSpec }
 
 class TransferSpec extends WordSpec with Matchers with ScalaFutures with ScalatestRouteTest
   with TransferRoutes with BeforeAndAfter {
@@ -15,8 +15,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
   import spray.json.DefaultJsonProtocol._
 
   val xa: Aux[Task, Unit] = Transactor.fromDriverManager[Task](
-    "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
-  )
+    "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
   override val persistenceHandler: PersistenceHandler = new PersistenceHandler(xa)
 

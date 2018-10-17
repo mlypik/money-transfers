@@ -8,8 +8,8 @@ import doobie.util.transactor.Transactor
 import monix.eval.Task
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
 object DemoServer extends App with TransferRoutes {
 
@@ -18,8 +18,7 @@ object DemoServer extends App with TransferRoutes {
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   val xa = Transactor.fromDriverManager[Task](
-    "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", ""
-  )
+    "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
   TestDataProvider.populateDatabase(xa)
 
