@@ -78,6 +78,15 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
           status shouldBe BadRequest
         }
       }
+
+      "not allow overdraws (POST /transfer)" in {
+        val transferSpec = MoneyTransfer(1234, 4321, 1000)
+        val transferRequest = Post(uri = "/transfer", content = transferSpec)
+
+        transferRequest ~> transferRoutes ~> check {
+          status shouldBe BadRequest
+        }
+      }
     }
 
     "History" should {

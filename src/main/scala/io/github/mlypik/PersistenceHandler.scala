@@ -5,7 +5,9 @@ import java.time.Instant
 import akka.Done
 import doobie.util.transactor.Transactor.Aux
 import monix.eval.Task
-import doobie.imports._
+import doobie.implicits._
+import doobie.util.invariant.UnexpectedEnd
+import io.github.mlypik.errors._
 
 import scala.concurrent.Future
 import monix.execution.Scheduler.Implicits.global
@@ -26,6 +28,10 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
       .map(balance => AccountBalance(accountId, balance))
       .attempt
       .runAsync
+      .map(_.left.map {
+        case UnexpectedEnd => AccountNotFound
+        case unknownException => unknownException
+      })
   }
 
   def preformTransfer(transferSpec: MoneyTransfer): Future[Either[Throwable, Done]] = {
@@ -33,9 +39,10 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
       sql"""UPDATE accounts SET balance = $targetBalance WHERE accountId = $accountId AND balance = $expectedBalance"""
         .update.run.map {
           case 1 => Done
-          case _ => throw new IllegalStateException("BalanceUpdateFailed")
+          case _ => BalanceUpdateFailed
         }
     }
+
     def insertTransferDetails(record: TransferRecord) = {
       sql"""INSERT INTO transfers (accountId, amount, ref, transactiondate)
             VALUES (${record.accountId}, ${record.amount}, ${record.ref}, ${record.transactiondate})"""
@@ -69,7 +76,11 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
           _ <- insertTo
         } yield Done
 
-        program.transact(transactor).attempt.runAsync
+        if (balanceFromAfterTransfer < 0) {
+          Future.successful(Left(OverdrawViolation))
+        } else {
+          program.transact(transactor).attempt.runAsync
+        }
     }
   }
 

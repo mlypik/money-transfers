@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.MethodDirectives.get
 import akka.http.scaladsl.server.directives.PathDirectives.path
 import akka.http.scaladsl.server.directives.RouteDirectives.complete
-import doobie.util.invariant.UnexpectedEnd
+import io.github.mlypik.errors.{ AccountNotFound, OverdrawViolation }
 
 trait TransferRoutes extends JsonSupport {
   import spray.json.DefaultJsonProtocol._
@@ -25,7 +25,7 @@ trait TransferRoutes extends JsonSupport {
       get {
         onSuccess(persistenceHandler.getBalance(accountId)) {
           case Right(balance) => complete(balance)
-          case Left(UnexpectedEnd) => complete(StatusCodes.NotFound, "Account not found")
+          case Left(AccountNotFound) => complete(StatusCodes.NotFound, "Account not found")
           case Left(exception) =>
             log.error(exception, "Unknown error")
             complete(StatusCodes.InternalServerError)
@@ -38,7 +38,8 @@ trait TransferRoutes extends JsonSupport {
         entity(as[MoneyTransfer]) { transferSpec =>
           onSuccess(persistenceHandler.preformTransfer(transferSpec)) {
             case Right(Done) => complete(StatusCodes.OK)
-            case Left(UnexpectedEnd) => complete(StatusCodes.BadRequest, "No account")
+            case Left(AccountNotFound) => complete(StatusCodes.BadRequest, "No account")
+            case Left(OverdrawViolation) => complete(StatusCodes.BadRequest, "Attempted to overdraw")
             case Left(exception) =>
               log.error(exception, "Unknown error")
               complete(StatusCodes.InternalServerError)
