@@ -27,7 +27,7 @@ It should start the service. DemoServer will start with datastore populated with
 
 To perform the transfer, we can POST the transfer details:
 ```
-$ curl -H "Content-Type: application/json" --request POST --data '{"from": 1234, "to": 4321, "amount": 10}' "localhost:8080/transf
+$ curl -H "Content-Type: application/json" --request POST --data '{"from": 1234, "to": 4321, "amount": 10}' localhost:8080/transfer
 OK
 ```
 After that, we can check the balance again:
