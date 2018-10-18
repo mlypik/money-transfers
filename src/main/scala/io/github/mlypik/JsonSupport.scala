@@ -10,4 +10,5 @@ trait JsonSupport extends SprayJsonSupport {
   implicit val accountBalanceJsonFormat = jsonFormat2(AccountBalance)
 
   implicit val transferRecordJsonFormat = jsonFormat4(TransferRecord)
+  implicit val transferRecordsJsonFormat = jsonFormat1(TransferRecords)
 }

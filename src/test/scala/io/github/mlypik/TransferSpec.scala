@@ -12,8 +12,6 @@ import org.scalatest.{ BeforeAndAfter, Matchers, WordSpec }
 class TransferSpec extends WordSpec with Matchers with ScalaFutures with ScalatestRouteTest
   with TransferRoutes with BeforeAndAfter {
 
-  import spray.json.DefaultJsonProtocol._
-
   val xa: Aux[Task, Unit] = Transactor.fromDriverManager[Task](
     "org.h2.Driver", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
 
@@ -94,7 +92,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
         historyRequest ~> transferRoutes ~> check {
           status shouldBe OK
-          entityAs[List[TransferRecord]] shouldBe empty
+          entityAs[TransferRecords].transfers shouldBe empty
         }
       }
     }
@@ -112,7 +110,7 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
         historyRequest ~> transferRoutes ~> check {
           status shouldBe OK
-          entityAs[List[TransferRecord]] should have length 1
+          entityAs[TransferRecords].transfers should have length 1
         }
       }
       "be available for both accounts involved in transfer (GET /history/accountId)" in {
@@ -127,9 +125,9 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
         historyRequestFrom ~> transferRoutes ~> check {
           status shouldBe OK
-          val records = entityAs[List[TransferRecord]]
-          records should have length 1
-          val record = records.head
+          val response = entityAs[TransferRecords]
+          response.transfers should have length 1
+          val record = response.transfers.head
 
           record.accountId shouldBe 1234
           record.amount shouldBe -10
@@ -140,9 +138,9 @@ class TransferSpec extends WordSpec with Matchers with ScalaFutures with Scalate
 
         historyRequestTo ~> transferRoutes ~> check {
           status shouldBe OK
-          val records = entityAs[List[TransferRecord]]
-          records should have length 1
-          val record = records.head
+          val response = entityAs[TransferRecords]
+          response.transfers should have length 1
+          val record = response.transfers.head
 
           record.accountId shouldBe 4321
           record.amount shouldBe 10

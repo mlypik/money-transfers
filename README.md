@@ -38,7 +38,7 @@ $ curl -H "Accept: application/json" localhost:8080/balance/1234
 We can verify the same using transaction history:
 ```
 $ curl -H "Accept: application/json" localhost:8080/history/1234
-[{"accountId":1234,"amount":-10.0000,"ref":4321,"transactiondate":"2018-10-17T17:39:58.874Z"}]
+{"transfers":[{"accountId":1234,"amount":-10.0000,"ref":4321,"transactiondate":"2018-10-18T11:40:55.882Z"}]}
 ```
 
 And for the other account:
@@ -46,6 +46,6 @@ And for the other account:
 $ curl -H "Accept: application/json" localhost:8080/balance/4321
 {"accountId":4321,"balance":20.0000}
 $ curl -H "Accept: application/json" localhost:8080/history/4321
-[{"accountId":4321,"amount":10.0000,"ref":1234,"transactiondate":"2018-10-17T17:39:58.874Z"}]
+{"transfers":[{"accountId":4321,"amount":10.0000,"ref":1234,"transactiondate":"2018-10-18T11:40:55.882Z"}]}
 ```
    

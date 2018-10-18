@@ -12,7 +12,6 @@ import akka.http.scaladsl.server.directives.RouteDirectives.complete
 import io.github.mlypik.errors.{ AccountNotFound, OverdrawViolation }
 
 trait TransferRoutes extends JsonSupport {
-  import spray.json.DefaultJsonProtocol._
 
   implicit def system: ActorSystem
 

@@ -17,6 +17,7 @@ final case class MoneyTransfer(from: Long, to: Long, amount: BigDecimal)
 final case class AccountBalance(accountId: Long, balance: BigDecimal)
 
 final case class TransferRecord(accountId: Long, amount: BigDecimal, ref: Long, transactiondate: String)
+final case class TransferRecords(transfers: List[TransferRecord])
 
 class PersistenceHandler(transactor: Aux[Task, Unit]) {
 
@@ -84,10 +85,11 @@ class PersistenceHandler(transactor: Aux[Task, Unit]) {
     }
   }
 
-  def getHistory(accountId: Long): Future[Either[Throwable, List[TransferRecord]]] = {
+  def getHistory(accountId: Long): Future[Either[Throwable, TransferRecords]] = {
     sql"""SELECT accountid, amount, ref, transactiondate FROM transfers WHERE accountId = $accountId"""
       .query[TransferRecord]
       .to[List]
+      .map(TransferRecords)
       .transact(transactor)
       .attempt
       .runAsync
